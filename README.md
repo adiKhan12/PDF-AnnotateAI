@@ -53,7 +53,12 @@ docker build -t pdf-annotation-tool .
 docker run -p 8080:80 pdf-annotation-tool
 ```
 
-4. Access the application in your browser at `http://localhost:8080`
+4. (Optional) Verify the container works by running the test script:
+```
+./docker-test.sh
+```
+
+5. Access the application in your browser at `http://localhost:8080`
 
 ## Usage
 
