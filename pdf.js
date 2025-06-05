@@ -121,20 +121,20 @@ fileInput.addEventListener('change', async (e) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
         const typedArray = new Uint8Array(e.target.result);
-        pdfData = await pdfjsLib.getDocument({ data: typedArray }).promise;
-        totalPages = pdfData.numPages;
+        pdfDoc = await pdfjsLib.getDocument({ data: typedArray }).promise;
+        totalPages = pdfDoc.numPages;
         pageNum = 1;
         updatePageCounter();
 
         // Store the original dimensions for each page
-        for (let i = 1; i <= pdfData.numPages; i++) {
-            const page = await pdfData.getPage(i);
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+            const page = await pdfDoc.getPage(i);
             const viewport = page.getViewport({ scale: 1 });
             originalPageDimensions[i] = { width: viewport.width, height: viewport.height };
         }
 
         // Render the PDF first with default scale
-        await renderPDF(pdfData);
+        await renderPDF(pdfDoc);
         
         // Then fit to width after a delay to ensure everything is properly rendered
         setTimeout(() => {
@@ -148,34 +148,34 @@ zoomInButton.addEventListener('click', () => {
     scale += 0.25;
     fitToWidthButton.classList.remove('active');
     updateZoomLevel();
-    renderPDF(pdfData);
+    renderPDF(pdfDoc);
 });
 
 zoomOutButton.addEventListener('click', () => {
     scale = Math.max(0.5, scale - 0.25);
     fitToWidthButton.classList.remove('active');
     updateZoomLevel();
-    renderPDF(pdfData);
+    renderPDF(pdfDoc);
 });
 
 prevPageButton.addEventListener('click', () => {
     if (pageNum <= 1) return; // Prevent going below the first page
     pageNum--;
     updatePageCounter();
-    renderPDF(pdfData);
+    renderPDF(pdfDoc);
     clearAIPanelFields();
 });
 
 nextPageButton.addEventListener('click', () => {
-    if (pageNum >= pdfData.numPages) return; // Prevent going beyond the last page
+    if (pageNum >= pdfDoc.numPages) return; // Prevent going beyond the last page
     pageNum++;
     updatePageCounter();
-    renderPDF(pdfData);
+    renderPDF(pdfDoc);
     clearAIPanelFields();
 });
 
 function updatePageCounter() {
-    if (pdfData) {
+    if (pdfDoc) {
         pageCounter.textContent = `Page ${pageNum} of ${totalPages}`;
     } else {
         pageCounter.textContent = 'Page 1 of 1';
@@ -531,7 +531,7 @@ window.jsPDF = window.jspdf.jsPDF;
 
 // Update the save button click handler
 saveButton.addEventListener('click', () => {
-    if (!pdfData) {
+    if (!pdfDoc) {
         noPdfMessage.style.display = 'block';
         return;
     }
@@ -576,7 +576,7 @@ saveWithQualityButton.addEventListener('click', async () => {
     const pdf = new jsPDF('p', 'pt', [originalPageDimensions[1].width, originalPageDimensions[1].height]);
 
         // Process each page
-    for (let i = 1; i <= pdfData.numPages; i++) {
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
             // Get the original page dimensions
             const { width, height } = originalPageDimensions[i];
 
@@ -591,7 +591,7 @@ saveWithQualityButton.addEventListener('click', async () => {
             tempContext.imageSmoothingQuality = 'high';
             
             // Render the PDF page at high resolution
-            const page = await pdfData.getPage(i);
+            const page = await pdfDoc.getPage(i);
             const viewport = page.getViewport({ scale: SCALE_FACTOR });
             
             // Render the PDF content to the canvas
@@ -683,7 +683,7 @@ window.addEventListener('click', (e) => {
 });
 
 async function renderPageToCanvas(pageNumber, customScale) {
-    const page = await pdfData.getPage(pageNumber);
+    const page = await pdfDoc.getPage(pageNumber);
     const viewport = page.getViewport({ scale: customScale });
 
     canvas.width = viewport.width;
@@ -744,7 +744,7 @@ function updateZoomLevel() {
 // Add keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     // Only process shortcuts if a PDF is loaded
-    if (!pdfData) return;
+    if (!pdfDoc) return;
     
     // Don't process shortcuts if user is typing in a text field
     if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
@@ -784,7 +784,7 @@ document.addEventListener('keydown', (e) => {
             if (pageNum > 1) {
                 pageNum--;
                 updatePageCounter();
-                renderPDF(pdfData);
+                renderPDF(pdfDoc);
                 clearAIPanelFields();
             }
             break;
@@ -792,7 +792,7 @@ document.addEventListener('keydown', (e) => {
             if (pageNum < totalPages) {
                 pageNum++;
                 updatePageCounter();
-                renderPDF(pdfData);
+                renderPDF(pdfDoc);
                 clearAIPanelFields();
             }
             break;
@@ -803,13 +803,13 @@ document.addEventListener('keydown', (e) => {
             scale += 0.25;
             fitToWidthButton.classList.remove('active');
             updateZoomLevel();
-            renderPDF(pdfData);
+            renderPDF(pdfDoc);
             break;
         case '-': // Zoom out
             scale = Math.max(0.5, scale - 0.25);
             fitToWidthButton.classList.remove('active');
             updateZoomLevel();
-            renderPDF(pdfData);
+            renderPDF(pdfDoc);
             break;
         case 'w': // Fit to width
             fitToWidthButton.click();
@@ -914,7 +914,7 @@ window.addEventListener('resize', () => {
     // Debounce the resize event to avoid excessive rendering
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-        if (pdfData && document.getElementById('fit-to-width').classList.contains('active')) {
+        if (pdfDoc && document.getElementById('fit-to-width').classList.contains('active')) {
             fitToWidth();
         }
     }, 200);
@@ -922,7 +922,7 @@ window.addEventListener('resize', () => {
 
 // Update the fitToWidth function to set the button as active
 function fitToWidth() {
-    if (!pdfData) return;
+    if (!pdfDoc) return;
     
     // Calculate the scale needed to fit the PDF to the wrapper width
     // Account for some padding
@@ -951,7 +951,7 @@ function fitToWidth() {
     fitToWidthButton.classList.add('active');
     
     updateZoomLevel();
-    renderPDF(pdfData);
+    renderPDF(pdfDoc);
 }
 
 // Fit to width button
@@ -979,7 +979,7 @@ function toggleToolbar() {
     
     // Adjust canvas wrapper height
     setTimeout(() => {
-        if (pdfData) {
+        if (pdfDoc) {
             checkScrollNeeded();
             if (fitToWidthButton.classList.contains('active')) {
                 fitToWidth();
@@ -1027,7 +1027,7 @@ function initAIPanel() {
     });
     
     translatePageButton.addEventListener('click', async () => {
-        if (!pdfData) {
+        if (!pdfDoc) {
             alert('Please open a PDF first');
             return;
         }
@@ -1055,7 +1055,7 @@ function initAIPanel() {
     });
     
     addTranslationAnnotation.addEventListener('click', () => {
-        if (!translationResult.textContent || !pdfData) return;
+        if (!translationResult.textContent || !pdfDoc) return;
         
         const text = translationResult.textContent;
         const x = 50; // Default position
@@ -1083,7 +1083,7 @@ function initAIPanel() {
     });
     
     summarizePageButton.addEventListener('click', async () => {
-        if (!pdfData) {
+        if (!pdfDoc) {
             alert('Please open a PDF first');
             return;
         }
@@ -1111,7 +1111,7 @@ function initAIPanel() {
     });
     
     addSummaryAnnotation.addEventListener('click', () => {
-        if (!summaryResult.textContent || !pdfData) return;
+        if (!summaryResult.textContent || !pdfDoc) return;
         
         const text = summaryResult.textContent;
         const x = 50; // Default position
@@ -1139,7 +1139,7 @@ function initAIPanel() {
     });
     
     extractFromPageButton.addEventListener('click', async () => {
-        if (!pdfData || !extractionQuery.value.trim()) {
+        if (!pdfDoc || !extractionQuery.value.trim()) {
             alert('Please open a PDF and specify what information to extract');
             return;
         }
@@ -1167,7 +1167,7 @@ function initAIPanel() {
     });
     
     addExtractionAnnotation.addEventListener('click', () => {
-        if (!extractionResult.textContent || !pdfData) return;
+        if (!extractionResult.textContent || !pdfDoc) return;
         
         const text = extractionResult.textContent;
         const x = 50; // Default position
@@ -1225,10 +1225,10 @@ function setLoading(element, isLoading) {
 
 // Extract text from the current PDF page
 async function extractTextFromCurrentPage() {
-    if (!pdfData) return '';
+    if (!pdfDoc) return '';
     
     try {
-        const page = await pdfData.getPage(pageNum);
+        const page = await pdfDoc.getPage(pageNum);
         
         // First try to extract text directly from the PDF
         const textContent = await page.getTextContent();
@@ -1304,7 +1304,7 @@ async function performOCROnCurrentPage() {
         showNotification('Performing OCR on scanned page...', 'info');
         
         // Render the current page to a canvas for OCR
-        const page = await pdfData.getPage(pageNum);
+        const page = await pdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
         
         const ocrCanvas = document.createElement('canvas');
