@@ -125,7 +125,7 @@ Please make sure to update tests as appropriate.
 
 ## License
 
-This is free and unencumbered software released into the public domain - see the [LICENSE](LICENSE) file for details 
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License. You are free to use, modify, and distribute this software for non-commercial purposes with proper attribution. Commercial use requires separate licensing - see the [LICENSE](LICENSE) file for full details. 
 
 
 
