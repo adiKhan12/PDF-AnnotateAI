@@ -1008,7 +1008,29 @@ function initAIPanel() {
     
     closeAiPanel.addEventListener('click', hideAIPanel);
     
-    // Translation functionality
+    // Function to render markdown content safely
+    function renderMarkdown(markdownText) {
+        if (typeof marked !== 'undefined') {
+            // Configure marked for safe rendering
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                sanitize: false,
+                smartLists: true,
+                smartypants: false
+            });
+            
+            return marked.parse(markdownText);
+        } else {
+            // Fallback: Simple formatting if marked.js isn't loaded
+            return markdownText
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+    }
+
+    // Update the translation functionality
     translateTextButton.addEventListener('click', async () => {
         if (!sourceText.value.trim()) {
             alert('Please enter text to translate');
@@ -1018,53 +1040,15 @@ function initAIPanel() {
         try {
             setLoading(translationResult, true);
             const result = await LLMService.translateText(sourceText.value, targetLanguage.value);
-            translationResult.textContent = result;
+            translationResult.innerHTML = renderMarkdown(result); // Use innerHTML with rendered markdown
             setLoading(translationResult, false);
         } catch (error) {
             setLoading(translationResult, false);
-            translationResult.textContent = `Error: ${error.message}`;
+            translationResult.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
         }
     });
-    
-    translatePageButton.addEventListener('click', async () => {
-        if (!pdfDoc) {
-            alert('Please open a PDF first');
-            return;
-        }
-        
-        try {
-            showNotification('Extracting text from page...', 'info');
-            const text = await extractTextFromCurrentPage();
-            sourceText.value = text;
-            hideNotification();
-            
-            // Scroll to the translate button to make it visible
-            translateTextButton.scrollIntoView({ behavior: 'smooth' });
-            
-            // Highlight the translate button to prompt user action
-            translateTextButton.classList.add('highlight-button');
-            setTimeout(() => {
-                translateTextButton.classList.remove('highlight-button');
-            }, 2000);
-            
-        } catch (error) {
-            hideNotification();
-            showNotification(`Error: ${error.message}`, 'error');
-            setTimeout(hideNotification, 3000);
-        }
-    });
-    
-    addTranslationAnnotation.addEventListener('click', () => {
-        if (!translationResult.textContent || !pdfDoc) return;
-        
-        const text = translationResult.textContent;
-        const x = 50; // Default position
-        const y = 100;
-        addTextAnnotation(text, x, y);
-        hideAIPanel();
-    });
-    
-    // Summarization functionality
+
+    // Update the summarization functionality
     summarizeTextButton.addEventListener('click', async () => {
         if (!summarizeText.value.trim()) {
             alert('Please enter text to summarize');
@@ -1074,14 +1058,82 @@ function initAIPanel() {
         try {
             setLoading(summaryResult, true);
             const result = await LLMService.summarizeContent(summarizeText.value, summaryLength.value);
-            summaryResult.textContent = result;
+            summaryResult.innerHTML = renderMarkdown(result); // Use innerHTML with rendered markdown
             setLoading(summaryResult, false);
         } catch (error) {
             setLoading(summaryResult, false);
-            summaryResult.textContent = `Error: ${error.message}`;
+            summaryResult.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
         }
     });
-    
+
+    // Update the extraction functionality
+    extractInfoButton.addEventListener('click', async () => {
+        if (!extractText.value.trim()) {
+            alert('Please enter text to extract information from');
+            return;
+        }
+        
+        try {
+            setLoading(extractionResult, true);
+            const result = await LLMService.extractInformation(extractText.value, extractionQuery.value);
+            extractionResult.innerHTML = renderMarkdown(result); // Use innerHTML with rendered markdown
+            setLoading(extractionResult, false);
+        } catch (error) {
+            setLoading(extractionResult, false);
+            extractionResult.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+        }
+    });
+
+    // Update page translation functionality
+    translatePageButton.addEventListener('click', async () => {
+        if (!pdfDoc) {
+            alert('Please open a PDF first');
+            return;
+        }
+        
+        try {
+            showNotification('Extracting text from current page...', 'info');
+            const extractedText = await extractTextFromCurrentPage();
+            
+            if (!extractedText || extractedText.trim().length < 10) {
+                hideNotification();
+                showNotification('No text found on this page. Trying OCR...', 'info');
+                const ocrText = await performOCROnCurrentPage();
+                
+                if (ocrText && ocrText.trim().length > 10) {
+                    sourceText.value = ocrText;
+                    showNotification('OCR completed successfully!', 'success');
+                    setTimeout(hideNotification, 2000);
+                } else {
+                    hideNotification();
+                    alert('Could not extract text from this page');
+                    return;
+                }
+            } else {
+                sourceText.value = extractedText;
+                hideNotification();
+                showNotification('Text extracted successfully!', 'success');
+                setTimeout(hideNotification, 2000);
+            }
+            
+            // Highlight the translate button
+            translateButton.classList.add('highlight-button');
+            setTimeout(() => {
+                translateButton.classList.remove('highlight-button');
+            }, 3000);
+            
+            setLoading(translationResult, true);
+            const result = await LLMService.translateText(extractedText, targetLanguage.value);
+            translationResult.innerHTML = renderMarkdown(result); // Use innerHTML with rendered markdown
+            setLoading(translationResult, false);
+        } catch (error) {
+            hideNotification();
+            setLoading(translationResult, false);
+            translationResult.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+        }
+    });
+
+    // Update page summarization functionality
     summarizePageButton.addEventListener('click', async () => {
         if (!pdfDoc) {
             alert('Please open a PDF first');
@@ -1089,91 +1141,94 @@ function initAIPanel() {
         }
         
         try {
-            showNotification('Extracting text from page...', 'info');
-            const text = await extractTextFromCurrentPage();
-            summarizeText.value = text;
-            hideNotification();
+            showNotification('Extracting text from current page...', 'info');
+            const extractedText = await extractTextFromCurrentPage();
             
-            // Scroll to the summarize button to make it visible
-            summarizeTextButton.scrollIntoView({ behavior: 'smooth' });
+            if (!extractedText || extractedText.trim().length < 10) {
+                hideNotification();
+                showNotification('No text found on this page. Trying OCR...', 'info');
+                const ocrText = await performOCROnCurrentPage();
+                
+                if (ocrText && ocrText.trim().length > 10) {
+                    summarizeText.value = ocrText;
+                    showNotification('OCR completed successfully!', 'success');
+                    setTimeout(hideNotification, 2000);
+                } else {
+                    hideNotification();
+                    alert('Could not extract text from this page');
+                    return;
+                }
+            } else {
+                summarizeText.value = extractedText;
+                hideNotification();
+                showNotification('Text extracted successfully!', 'success');
+                setTimeout(hideNotification, 2000);
+            }
             
-            // Highlight the summarize button to prompt user action
-            summarizeTextButton.classList.add('highlight-button');
+            // Highlight the summarize button
+            summarizeButton.classList.add('highlight-button');
             setTimeout(() => {
-                summarizeTextButton.classList.remove('highlight-button');
-            }, 2000);
+                summarizeButton.classList.remove('highlight-button');
+            }, 3000);
             
+            setLoading(summaryResult, true);
+            const result = await LLMService.summarizeContent(extractedText, summaryLength.value);
+            summaryResult.innerHTML = renderMarkdown(result); // Use innerHTML with rendered markdown
+            setLoading(summaryResult, false);
         } catch (error) {
             hideNotification();
-            showNotification(`Error: ${error.message}`, 'error');
-            setTimeout(hideNotification, 3000);
+            setLoading(summaryResult, false);
+            summaryResult.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
         }
     });
-    
-    addSummaryAnnotation.addEventListener('click', () => {
-        if (!summaryResult.textContent || !pdfDoc) return;
-        
-        const text = summaryResult.textContent;
-        const x = 50; // Default position
-        const y = 100;
-        addTextAnnotation(text, x, y);
-        hideAIPanel();
-    });
-    
-    // Information extraction functionality
-    extractInfoButton.addEventListener('click', async () => {
-        if (!extractText.value.trim() || !extractionQuery.value.trim()) {
-            alert('Please enter text to analyze and specify what information to extract');
-            return;
-        }
-        
-        try {
-            setLoading(extractionResult, true);
-            const result = await LLMService.extractInformation(extractText.value, extractionQuery.value);
-            extractionResult.textContent = result;
-            setLoading(extractionResult, false);
-        } catch (error) {
-            setLoading(extractionResult, false);
-            extractionResult.textContent = `Error: ${error.message}`;
-        }
-    });
-    
+
+    // Update page extraction functionality
     extractFromPageButton.addEventListener('click', async () => {
         if (!pdfDoc || !extractionQuery.value.trim()) {
-            alert('Please open a PDF and specify what information to extract');
+            alert('Please open a PDF and enter an extraction query first');
             return;
         }
         
         try {
-            showNotification('Extracting text from page...', 'info');
-            const text = await extractTextFromCurrentPage();
-            extractText.value = text;
-            hideNotification();
+            showNotification('Extracting text from current page...', 'info');
+            const extractedText = await extractTextFromCurrentPage();
             
-            // Scroll to the extract button to make it visible
-            extractInfoButton.scrollIntoView({ behavior: 'smooth' });
+            if (!extractedText || extractedText.trim().length < 10) {
+                hideNotification();
+                showNotification('No text found on this page. Trying OCR...', 'info');
+                const ocrText = await performOCROnCurrentPage();
+                
+                if (ocrText && ocrText.trim().length > 10) {
+                    extractText.value = ocrText;
+                    showNotification('OCR completed successfully!', 'success');
+                    setTimeout(hideNotification, 2000);
+                } else {
+                    hideNotification();
+                    alert('Could not extract text from this page');
+                    return;
+                }
+            } else {
+                extractText.value = extractedText;
+                hideNotification();
+                showNotification('Text extracted successfully!', 'success');
+                setTimeout(hideNotification, 2000);
+            }
             
-            // Highlight the extract button to prompt user action
-            extractInfoButton.classList.add('highlight-button');
+            // Highlight the extract button
+            extractButton.classList.add('highlight-button');
             setTimeout(() => {
-                extractInfoButton.classList.remove('highlight-button');
-            }, 2000);
+                extractButton.classList.remove('highlight-button');
+            }, 3000);
             
+            setLoading(extractionResult, true);
+            const result = await LLMService.extractInformation(extractedText, extractionQuery.value);
+            extractionResult.innerHTML = renderMarkdown(result); // Use innerHTML with rendered markdown
+            setLoading(extractionResult, false);
         } catch (error) {
             hideNotification();
-            showNotification(`Error: ${error.message}`, 'error');
-            setTimeout(hideNotification, 3000);
+            setLoading(extractionResult, false);
+            extractionResult.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
         }
-    });
-    
-    addExtractionAnnotation.addEventListener('click', () => {
-        if (!extractionResult.textContent || !pdfDoc) return;
-        
-        const text = extractionResult.textContent;
-        const x = 50; // Default position
-        const y = 100;
-        addTextAnnotation(text, x, y);
-        hideAIPanel();
     });
 }
 

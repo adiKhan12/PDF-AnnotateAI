@@ -4,7 +4,7 @@
  */
 
 // DeepSeek API configuration
-const DEEPSEEK_API_KEY = 'DeepSeek API Key';
+const DEEPSEEK_API_KEY = 'sk-546d441e6611424da55a142b14c925d7';
 const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1';
 
 // Available language options for translation
