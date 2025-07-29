@@ -4,7 +4,7 @@
  */
 
 // OpenRouter API configuration
-const OPENROUTER_API_KEY = 'YOUR_OPENROUTER_API_KEY'; // Replace with your actual OpenRouter API key
+const OPENROUTER_API_KEY = 'YOUR_OPENRO';
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const SITE_URL = 'https://pdf-viewer.example.com'; // Replace with actual site URL
 const SITE_NAME = 'PDF Viewer and Annotator'; // Replace with actual site name
@@ -42,7 +42,7 @@ async function translateText(text, targetLanguage) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.5-flash-lite-preview-06-17',
+                model: 'qwen/qwen-2.5-72b-instruct:free',
                 messages: [
                     {
                         role: 'system',
@@ -87,7 +87,7 @@ async function summarizeContent(text, maxLength = 200) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.5-flash-lite-preview-06-17',
+                model: 'qwen/qwen-2.5-72b-instruct:free',
                 messages: [
                     {
                         role: 'system',
@@ -132,7 +132,7 @@ async function extractInformation(text, query) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.5-flash-lite-preview-06-17',
+                model: 'qwen/qwen-2.5-72b-instruct:free',
                 messages: [
                     {
                         role: 'system',
@@ -267,7 +267,7 @@ async function askLLMForOCRGuidance() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.5-flash-lite-preview-06-17',
+                model: 'qwen/qwen-2.5-72b-instruct:free',
                 messages: [
                     {
                         role: 'system',
