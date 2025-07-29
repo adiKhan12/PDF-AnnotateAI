@@ -3,9 +3,11 @@
  * Handles translation, summarization, and information extraction
  */
 
-// DeepSeek API configuration
-const DEEPSEEK_API_KEY = 'sk-546d441e6611424da55a142b14c925d7';
-const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1';
+// OpenRouter API configuration
+const OPENROUTER_API_KEY = 'YOUR_OPENROUTER_API_KEY'; // Replace with your actual OpenRouter API key
+const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
+const SITE_URL = 'https://pdf-viewer.example.com'; // Replace with actual site URL
+const SITE_NAME = 'PDF Viewer and Annotator'; // Replace with actual site name
 
 // Available language options for translation
 const LANGUAGE_OPTIONS = [
@@ -31,14 +33,16 @@ const LANGUAGE_OPTIONS = [
  */
 async function translateText(text, targetLanguage) {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: 'google/gemini-2.5-flash-lite-preview-06-17',
                 messages: [
                     {
                         role: 'system',
@@ -74,14 +78,16 @@ async function translateText(text, targetLanguage) {
  */
 async function summarizeContent(text, maxLength = 200) {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: 'google/gemini-2.5-flash-lite-preview-06-17',
                 messages: [
                     {
                         role: 'system',
@@ -117,14 +123,16 @@ async function summarizeContent(text, maxLength = 200) {
  */
 async function extractInformation(text, query) {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: 'google/gemini-2.5-flash-lite-preview-06-17',
                 messages: [
                     {
                         role: 'system',
@@ -250,14 +258,16 @@ function loadTesseractScript() {
 // Fallback function to ask LLM for OCR guidance
 async function askLLMForOCRGuidance() {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: 'google/gemini-2.5-flash-lite-preview-06-17',
                 messages: [
                     {
                         role: 'system',
