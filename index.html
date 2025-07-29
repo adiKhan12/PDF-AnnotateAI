@@ -96,6 +96,29 @@
     </div>
     
     <div class="panel-content">
+      <!-- Model Selection and API Key -->
+      <div class="ai-section">
+        <div class="section-header">
+          <h4>Model Settings</h4>
+        </div>
+        <div class="section-content">
+          <div class="input-group">
+            <label for="api-key">OpenRouter API Key:</label>
+            <input type="password" id="api-key" placeholder="Enter your OpenRouter API key">
+          </div>
+          <div class="input-group">
+            <label for="model-select">Select Model:</label>
+            <div class="model-select-container">
+              <input type="text" id="model-search" placeholder="Type to search models..." autocomplete="off">
+              <div id="model-dropdown" class="model-dropdown hidden">
+                <div class="model-list" id="model-list"></div>
+              </div>
+            </div>
+            <input type="hidden" id="selected-model">
+          </div>
+        </div>
+      </div>
+      
       <!-- Translation Section -->
       <div id="translation-section" class="ai-section">
         <div class="section-header">

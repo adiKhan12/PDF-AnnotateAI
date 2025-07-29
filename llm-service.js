@@ -4,10 +4,13 @@
  */
 
 // OpenRouter API configuration
-const OPENROUTER_API_KEY = 'YOUR_OPENRO';
+let OPENROUTER_API_KEY = localStorage.getItem('openrouter-api-key') || 'YOUR_OPENRO';
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const SITE_URL = 'https://pdf-viewer.example.com'; // Replace with actual site URL
 const SITE_NAME = 'PDF Viewer and Annotator'; // Replace with actual site name
+
+// Selected model (default to qwen/qwen-2.5-72b-instruct:free if not set)
+let SELECTED_MODEL = localStorage.getItem('selected-model') || 'qwen/qwen-2.5-72b-instruct:free';
 
 // Available language options for translation
 const LANGUAGE_OPTIONS = [
@@ -42,7 +45,7 @@ async function translateText(text, targetLanguage) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'qwen/qwen-2.5-72b-instruct:free',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -87,7 +90,7 @@ async function summarizeContent(text, maxLength = 200) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'qwen/qwen-2.5-72b-instruct:free',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -132,7 +135,7 @@ async function extractInformation(text, query) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'qwen/qwen-2.5-72b-instruct:free',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -267,7 +270,7 @@ async function askLLMForOCRGuidance() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'qwen/qwen-2.5-72b-instruct:free',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -299,4 +302,56 @@ window.LLMService = {
     performOCR,
     populateLanguageOptions,
     LANGUAGE_OPTIONS
-}; 
+};
+
+/**
+ * Fetches available models from OpenRouter API
+ * @returns {Promise<Array>} - Array of model objects
+ */
+async function fetchModels() {
+    try {
+        const response = await fetch(`${OPENROUTER_API_BASE}/models`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data.data || [];
+    } catch (error) {
+        console.error('Error fetching models:', error);
+        throw error;
+    }
+}
+
+/**
+ * Updates the API key and saves it to localStorage
+ * @param {string} apiKey - The new API key
+ */
+function updateApiKey(apiKey) {
+    OPENROUTER_API_KEY = apiKey;
+    localStorage.setItem('openrouter-api-key', apiKey);
+}
+
+/**
+ * Updates the selected model and saves it to localStorage
+ * @param {string} model - The new selected model
+ */
+function updateSelectedModel(model) {
+    SELECTED_MODEL = model;
+    localStorage.setItem('selected-model', model);
+}
+
+// Export additional functions
+window.LLMService = {
+    ...window.LLMService,
+    fetchModels,
+    updateApiKey,
+    updateSelectedModel
+};
