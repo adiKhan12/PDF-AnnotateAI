@@ -276,7 +276,19 @@
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
   <script src="llm-service.js"></script>
-  <script src="pdf.js"></script>
+  <script src="modules/utilities-module.js"></script>
+  <script src="modules/pdf-module.js"></script>
+  <script src="modules/ui-module.js"></script>
+  <script>
+    // Initialize modules when the DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize the PDF module
+      PDFModule.initPDFModule();
+      
+      // Initialize the UI module
+      UIModule.initUIModule();
+    });
+  </script>
 </body>
 
 </html>
