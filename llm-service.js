@@ -3,9 +3,14 @@
  * Handles translation, summarization, and information extraction
  */
 
-// DeepSeek API configuration
-const DEEPSEEK_API_KEY = 'sk-546d441e6611424da55a142b14c925d7';
-const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1';
+// OpenRouter API configuration
+let OPENROUTER_API_KEY = localStorage.getItem('openrouter-api-key') || 'YOUR_OPENRO';
+const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
+const SITE_URL = 'https://pdf-viewer.example.com'; // Replace with actual site URL
+const SITE_NAME = 'PDF Viewer and Annotator'; // Replace with actual site name
+
+// Selected model (default to qwen/qwen-2.5-72b-instruct:free if not set)
+let SELECTED_MODEL = localStorage.getItem('selected-model') || 'qwen/qwen-2.5-72b-instruct:free';
 
 // Available language options for translation
 const LANGUAGE_OPTIONS = [
@@ -31,14 +36,16 @@ const LANGUAGE_OPTIONS = [
  */
 async function translateText(text, targetLanguage) {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -74,14 +81,16 @@ async function translateText(text, targetLanguage) {
  */
 async function summarizeContent(text, maxLength = 200) {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -117,14 +126,16 @@ async function summarizeContent(text, maxLength = 200) {
  */
 async function extractInformation(text, query) {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -250,14 +261,16 @@ function loadTesseractScript() {
 // Fallback function to ask LLM for OCR guidance
 async function askLLMForOCRGuidance() {
     try {
-        const response = await fetch(`${DEEPSEEK_API_BASE}/chat/completions`, {
+        const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': SITE_URL,
+                'X-Title': SITE_NAME,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: SELECTED_MODEL,
                 messages: [
                     {
                         role: 'system',
@@ -289,4 +302,56 @@ window.LLMService = {
     performOCR,
     populateLanguageOptions,
     LANGUAGE_OPTIONS
-}; 
+};
+
+/**
+ * Fetches available models from OpenRouter API
+ * @returns {Promise<Array>} - Array of model objects
+ */
+async function fetchModels() {
+    try {
+        const response = await fetch(`${OPENROUTER_API_BASE}/models`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data.data || [];
+    } catch (error) {
+        console.error('Error fetching models:', error);
+        throw error;
+    }
+}
+
+/**
+ * Updates the API key and saves it to localStorage
+ * @param {string} apiKey - The new API key
+ */
+function updateApiKey(apiKey) {
+    OPENROUTER_API_KEY = apiKey;
+    localStorage.setItem('openrouter-api-key', apiKey);
+}
+
+/**
+ * Updates the selected model and saves it to localStorage
+ * @param {string} model - The new selected model
+ */
+function updateSelectedModel(model) {
+    SELECTED_MODEL = model;
+    localStorage.setItem('selected-model', model);
+}
+
+// Export additional functions
+window.LLMService = {
+    ...window.LLMService,
+    fetchModels,
+    updateApiKey,
+    updateSelectedModel
+};

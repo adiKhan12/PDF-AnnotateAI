@@ -26,6 +26,9 @@ let sourceText, targetLanguage, translateTextButton, translatePageButton, transl
 let summarizeText, summaryLength, summarizeTextButton, summarizePageButton, summaryResult;
 let extractText, extractionQuery, extractInfoButton, extractFromPageButton, extractionResult;
 
+// Model selection elements
+let apiKeyInput, modelSearchInput, modelDropdown, modelList, selectedModelInput;
+
 // State variables
 let uiTool = 'pen';
 
@@ -121,6 +124,13 @@ function getUIElements() {
     extractInfoButton = document.getElementById('extract-info-button');
     extractFromPageButton = document.getElementById('extract-from-page-button');
     extractionResult = document.getElementById('extraction-result');
+    
+    // Model selection elements
+    apiKeyInput = document.getElementById('api-key');
+    modelSearchInput = document.getElementById('model-search');
+    modelDropdown = document.getElementById('model-dropdown');
+    modelList = document.getElementById('model-list');
+    selectedModelInput = document.getElementById('selected-model');
 }
 
 // Add event listeners to UI elements
@@ -255,6 +265,19 @@ function addEventListeners() {
     window.addEventListener('showLoadingMessage', handleShowLoadingMessage);
     window.addEventListener('hideLoadingMessage', handleHideLoadingMessage);
     window.addEventListener('clearAIPanelFields', handleClearAIPanelFields);
+    
+    // Model selection event listeners
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('input', handleApiKeyChange);
+    }
+    
+    if (modelSearchInput) {
+        modelSearchInput.addEventListener('input', handleModelSearch);
+        modelSearchInput.addEventListener('focus', handleModelSearchFocus);
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', handleDocumentClick);
 }
 
 // Initialize UI state
@@ -281,6 +304,9 @@ function initializeUI() {
     
     // Initialize AI panel
     initAIPanel();
+    
+    // Initialize model selection
+    initModelSelection();
 }
 
 // Handle file input change
@@ -1228,6 +1254,158 @@ function handleClearAIPanelFields() {
     clearAIPanelFields();
 }
 
+// Initialize model selection functionality
+async function initModelSelection() {
+    // Load saved API key and selected model
+    const savedApiKey = localStorage.getItem('openrouter-api-key');
+    const savedModel = localStorage.getItem('selected-model');
+    
+    if (apiKeyInput && savedApiKey) {
+        apiKeyInput.value = savedApiKey;
+    }
+    
+    if (modelSearchInput && savedModel) {
+        // Set the model search input to show the selected model name
+        modelSearchInput.placeholder = savedModel;
+    }
+    
+    if (selectedModelInput && savedModel) {
+        selectedModelInput.value = savedModel;
+    }
+    
+    // Fetch models if API key is available
+    if (savedApiKey && window.LLMService) {
+        try {
+            await loadModelList();
+        } catch (error) {
+            console.warn('Could not load model list:', error);
+        }
+    }
+}
+
+// Handle API key change
+async function handleApiKeyChange(event) {
+    const apiKey = event.target.value;
+    if (window.LLMService) {
+        window.LLMService.updateApiKey(apiKey);
+        
+        // If we have an API key, try to load the model list
+        if (apiKey) {
+            try {
+                await loadModelList();
+            } catch (error) {
+                console.warn('Could not load model list:', error);
+            }
+        }
+    }
+}
+
+// Handle model search input
+async function handleModelSearch(event) {
+    const searchTerm = event.target.value.toLowerCase();
+    
+    // Show dropdown when there's a search term
+    if (searchTerm && modelDropdown) {
+        modelDropdown.classList.remove('hidden');
+    }
+    
+    // Filter models if we have loaded them
+    if (window.LLMService && modelList) {
+        try {
+            const models = await window.LLMService.fetchModels();
+            const filteredModels = models.filter(model =>
+                model.id.toLowerCase().includes(searchTerm) ||
+                (model.name && model.name.toLowerCase().includes(searchTerm))
+            );
+            renderModelList(filteredModels);
+        } catch (error) {
+            console.error('Error filtering models:', error);
+        }
+    }
+}
+
+// Handle model search focus
+function handleModelSearchFocus() {
+    if (modelDropdown) {
+        modelDropdown.classList.remove('hidden');
+    }
+}
+
+// Handle click outside dropdown
+function handleDocumentClick(event) {
+    if (modelDropdown && !modelDropdown.contains(event.target) &&
+        modelSearchInput && !modelSearchInput.contains(event.target)) {
+        modelDropdown.classList.add('hidden');
+    }
+}
+
+// Load model list from API
+async function loadModelList() {
+    if (!window.LLMService || !modelList) return;
+    
+    try {
+        const models = await window.LLMService.fetchModels();
+        renderModelList(models);
+    } catch (error) {
+        console.error('Error loading model list:', error);
+        // Show error in model list
+        if (modelList) {
+            modelList.innerHTML = `<div class="error-message">Failed to load models: ${error.message}</div>`;
+        }
+    }
+}
+
+// Render model list in dropdown
+function renderModelList(models) {
+    if (!modelList) return;
+    
+    if (!models || models.length === 0) {
+        modelList.innerHTML = '<div class="model-item">No models found</div>';
+        return;
+    }
+    
+    // Limit to first 50 models for performance
+    const displayModels = models.slice(0, 50);
+    
+    modelList.innerHTML = displayModels.map(model => `
+        <div class="model-item" data-model-id="${model.id}">
+            <div class="model-name">${model.name || model.id}</div>
+            <div class="model-id">${model.id}</div>
+        </div>
+    `).join('');
+    
+    // Add event listeners to model items
+    const modelItems = modelList.querySelectorAll('.model-item');
+    modelItems.forEach(item => {
+        item.addEventListener('click', () => selectModel(item));
+    });
+}
+
+// Select a model
+function selectModel(modelItem) {
+    const modelId = modelItem.dataset.modelId;
+    const modelName = modelItem.querySelector('.model-name').textContent;
+    
+    // Update UI
+    if (modelSearchInput) {
+        modelSearchInput.value = modelName;
+    }
+    
+    if (selectedModelInput) {
+        selectedModelInput.value = modelId;
+    }
+    
+    // Hide dropdown
+    if (modelDropdown) {
+        modelDropdown.classList.add('hidden');
+    }
+    
+    // Update LLM service
+    if (window.LLMService) {
+        window.LLMService.updateSelectedModel(modelId);
+    }
+}
+
 // Export functions for use in other modules
 window.UIModule = {
     initUIModule,
@@ -1243,5 +1421,6 @@ window.UIModule = {
     toggleAIPanel,
     showNotification,
     hideNotification,
-    clearAIPanelFields
+    clearAIPanelFields,
+    initModelSelection
 };
